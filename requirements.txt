@@ -1,0 +1,14 @@
+dask[dataframe]
+geopandas
+streamlit
+pandas
+folium
+streamlit_folium
+matplotlib[pyplot]
+contextily
+matplotlib[colors]
+matplotlib_scalebar[scalebar]
+plotly[express]
+plotly[graph_objects]
+numpy
+duckdb

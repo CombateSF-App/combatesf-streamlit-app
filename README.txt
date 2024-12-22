@@ -10,7 +10,7 @@ Em seguida, devemos acessar o novo diretório, por meio do comando (no Sistema O
 2)	cd combatesf-streamlit-app
 
 Por fim, após a alteração da base de dados, a sequência de comandos a seguir determina o uso do Git LFS e atualiza o repositório no GitHub
-3)	git lsf install
+3)	git lfs install
 	git lfs track .\my_database.db
 	git add .\.gitattributes
 	git add .\my_database.db
@@ -25,7 +25,7 @@ No campo seguinte,
 5)	Password for 'https://CombateSF-App@github.com':,
 
 devemos digitar o GitHub Personal access token ao invés da senha da conta.
-Este vídeo no YouTube serve como tutorial para a obtenção do token.
+Este vídeo no YouTube serve como tutorial para a obtenção do token: https://www.youtube.com/watch?v=EaR4HRsYSPg
 
 
 Nas proximas vezes que for seguido o procedimento, devemos acessar o diretório criado anteriormente e executar o comando a seguir:
@@ -39,7 +39,7 @@ Resumidamente:
 	- Primeira vez:
 		git clone https://github.com/CombateSF-App/combatesf-streamlit-app
 		cd combatesf-streamlit-app
-		git lsf install
+		git lfs install
 		git lfs track .\my_database.db
 		git add .\.gitattributes
 		git add .\my_database.db
@@ -50,7 +50,7 @@ Resumidamente:
 	
 	- Próximas vezes:
 		git pull https://github.com/CombateSF-App/combatesf-streamlit-app
-		git lsf install
+		git lfs install
 		git lfs track .\my_database.db
 		git add .\.gitattributes
 		git add .\my_database.db

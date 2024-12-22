@@ -56,5 +56,6 @@ Resumidamente:
 		git add .\my_database.db
 		git commit -m "[Mensagem de Commit]"
 		git push
-		Username for 'https://github.com': CombateSF-App
-		Password for 'https://CombateSF-App@github.com': [Token]
+		Caso necessário:
+			Username for 'https://github.com': CombateSF-App
+			Password for 'https://CombateSF-App@github.com': [Token]

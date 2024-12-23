@@ -9,14 +9,14 @@ st.set_page_config(page_title="MAXSATT - Plataforma de Monitoramento", layout="w
 
 col1, col2, col3, col4 = st.columns([2, 2, 1, 2])
 with col2:
-    st.image("logos\logotipo_combate.png")
+    st.image("logos/logotipo_combate.png")
 with col3:
-    st.image("logos\logotipo_Maxsatt.png")
+    st.image("logos/logotipo_Maxsatt.png")
 
 st.markdown("<h1 style='text-align:center;'font-size:40px;'>Plataforma de Monitoramento de Formigas por Sensoriamento Remoto</h1>", unsafe_allow_html=True)
 
 conn = duckdb.connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction/pred_attack_2024.parquet'")
 query = """
 SELECT UPPER(STAND) AS STAND, 
        UPPER(FARM) AS FARM, 
@@ -26,7 +26,7 @@ FROM pred_attack;
 """
 
 pred_attack = conn.execute(query).fetchdf()
-stands_all = gpd.read_file("prediction\Talhoes_Manulife_2.shp")
+stands_all = gpd.read_file("prediction/Talhoes_Manulife_2.shp")
 stands_all = stands_all.to_crs(epsg=4326)
 stands_all['COMPANY'] = stands_all['Companhia'].str.upper()
 stands_all['FARM'] = stands_all['Fazenda'].str.replace(" ", "_")

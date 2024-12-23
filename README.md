@@ -71,7 +71,6 @@ Por fim, após a alteração da base de dados, o procedimento consiste em repeti
 
 
 ### Resumidamente:
----------------------
 	- Primeira vez:
 		git clone https://github.com/CombateSF-App/combatesf-streamlit-app
 		cd combatesf-streamlit-app

@@ -12,9 +12,9 @@ Este repositório contém todos os arquivos necessários para a funcionalidade d
 
 ## Tutorial de Utilização Local do App
 > Nota
-    Todos os comandos apresentados a seguir devem ser reproduzidos em uma Command-Line Interface (CLI), ou Interface de Linha de Comando, como o Windows PowerShell ou o Prompt de Comando, e assumem que o ambiente sendo utilizado já possui instalados os programas
-	    python
-        pip
+    Todos os comandos apresentados a seguir devem ser reproduzidos em uma Command-Line Interface (CLI), ou Interface de Linha de Comando, como o Windows PowerShell ou o Prompt de Comando, e assumem que o ambiente sendo utilizado já possui instalados os programas\n
+	    python\n
+        pip\n
 	    git
 
 #### O repositório no GitHub contém todos os arquivos referentes ao projeto. Entretanto, a base de dados utilizada pelo app excede o limite de tamanho permitido pelo GitHub. Portanto, utilizamos também a ferramenta Git LSF (Git Large File Storage), que viabiliza o upload de arquivos de até 2GB gratuitamente.
@@ -22,10 +22,12 @@ Este repositório contém todos os arquivos necessários para a funcionalidade d
 #### O repositório deve ser alterado sempre que for desejada qualquer alteração na base de dados "my_database.db". Sendo assim, há uma sequência de passos a serem seguidos sempre que uma alteração for efetuada:
 
 #### Na primeira vez que for seguido o procedimento, é preciso criar um diretório local através do qual serão feitas as alterações por meio do comando
-1)	git clone https://github.com/CombateSF-App/combatesf-streamlit-app
+1)
+git clone https://github.com/CombateSF-App/combatesf-streamlit-app
 
 #### Em seguida, devemos acessar o novo diretório, por meio do comando (no Sistema Operacional Windows)
-2)	cd combatesf-streamlit-app
+2)
+cd combatesf-streamlit-app
 
 #### Por fim, após a alteração da base de dados, a sequência de comandos a seguir determina o uso do Git LFS e atualiza o repositório no GitHub
 3)	git lfs install

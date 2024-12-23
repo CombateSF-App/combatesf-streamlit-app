@@ -13,22 +13,24 @@ import plotly.graph_objects as go
 import numpy as np
 import duckdb
 
-st.set_page_config(page_title="Visão geral", layout="wide")
+st.set_page_config(page_title="Informações Gerais", layout="wide")
 
 
 #Barra superior com logos
 col1, col2, col3, col4 = st.columns([3, 2, 1, 3])
 with col2:
-    st.image("logos/logotipo_combate.png")
+    st.image("logos\logotipo_combate.png")
 with col3:
-    st.image("logos/logotipo_Maxsatt.png")
+    st.image("logos\logotipo_Maxsatt.png")
 
 
 st.title("Visão geral")
 
-# Query para carregar os dados de forma mais rápida
-conn = duckdb.connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction/pred_attack_2024.parquet'")
+@st.cache_resource 
+def connect(file):
+    return duckdb.connect(file)
+conn = connect('my_database.db')
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
 query = """
 SELECT * FROM pred_attack
 WHERE DATE = ?
@@ -39,13 +41,10 @@ SELECT MAX(DATE) AS most_recent_date
 FROM pred_attack
 """
 
-# Executar a query e retornar a data mais recente
 most_recent_date_df = conn.execute(query_recent).fetchdf()
 
-# Obter a data como um valor individual
 most_recent_date = most_recent_date_df['most_recent_date'][0]
 
-# Validar e converter a data para o formato correto
 if pd.notna(most_recent_date):
     most_recent_date = pd.to_datetime(most_recent_date).date()
 
@@ -70,7 +69,7 @@ if st.session_state.selectedvariable3:
     pred_attack['FARM'] = pred_attack['FARM'].str.upper()
     pred_attack['STAND'] = pred_attack['STAND'].str.upper()
 
-    stands_all = gpd.read_file("prediction/Talhoes_Manulife_2.shp")
+    stands_all = gpd.read_file("prediction\Talhoes_Manulife_2.shp")
     stands_all = stands_all.to_crs(epsg=4326)
     stands_all['COMPANY'] = stands_all['Companhia'].str.upper()
     stands_all['FARM'] = stands_all['Fazenda'].str.replace(" ", "_")
@@ -96,7 +95,6 @@ if st.session_state.selectedvariable3:
         )
 
     # Definir variáveis e tabelas que serão usadas pelos gráficos
-    # Definir QT usando query para não sobrecarregar a memória
     quantile_query = """
     SELECT QUANTILE(canopycov, 0.10) AS QT
     FROM pred_attack
@@ -128,69 +126,76 @@ if st.session_state.selectedvariable3:
     pred_attack_BQ_NEW['Status'] = ['Desfolha' if x < QT else 'Saudável' for x in pred_attack_BQ_NEW['canopycov']]
         
 
+    # CARD FAZENDAS e TALHÕES
+
+    filtered_farms = stands_all[stands_all['COMPANY'] == selectedvariable4]
+    num_unique_farms = filtered_farms['FARM'].nunique()
+
+    filtered_stands = stands_all[stands_all['FARM'] == selectedvariable1]
+    num_unique_stands = filtered_stands['STAND'].nunique()
+
+    def create_card(title, value):
+        return f"""
+        <div style="
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-family: Arial, sans-serif;
+        ">
+            <h4 style="margin: 0; color: #333;">{title}</h4>
+            <h1 style="margin: 0; color: #000000;">{value}</h1>
+        </div>
+        """
+
 
     # HEATMAP DO TALHÃO - GRADIENTE
     fig1, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
 
-    # Plotar polígonos (stands) no mapa
     stands_sel.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=0.5)
 
-    # Plotar pontos rasterizados para cobertura do dossel
     sc = ax.scatter(pred_attack_BQ_NEW['X'], pred_attack_BQ_NEW['Y'], 
                     c=pred_attack_BQ_NEW['canopycov'], cmap='RdYlGn', 
                     s=1, alpha=1, marker='s', label='Cobertura do Dossel (%)')
 
-    # Adicionar barra de escala e seta norte
     ax.annotate('N', xy=(0.9, 0.1), xytext=(0.9, 0.2), 
                 arrowprops=dict(facecolor='black', width=3, headwidth=10),
                 ha='center', va='center', fontsize=3, color='black')
 
-    # Estilizar o gráfico e adicionar mapa de fundo
     ctx.add_basemap(ax, crs=stands_sel.crs, source=ctx.providers.Esri.WorldImagery, attribution=False)
 
     ax.axis('off')
 
-    # Ajustar a cor da legenda
-    cbar = plt.colorbar(sc, ax=ax, fraction=0.02, pad=0.02)  # Ajusta o tamanho da barra
-    cbar.set_label("Cobertura do dossel (%)", fontsize=8)  # Ajusta o tamanho do rótulo da barra
+    cbar = plt.colorbar(sc, ax=ax, fraction=0.02, pad=0.02)
+    cbar.set_label("Cobertura do dossel (%)", fontsize=8)
     cbar.ax.tick_params(labelsize=6)
 
-    #ax.set_title("Cobertura do Dossel", fontsize=5, pad=10)
-
     # HEATMAP DO TALHÃO - BINÁRIO
-
-    # Criar um mapeamento de cores para o status
 
     #fig4, ax = plt.subplots(figsize=(6, 3))
     #color_map = {'Saudável': 'green', 'Desfolha': 'red'}
     #pred_attack_BQ_NEW['color'] = pred_attack_BQ_NEW['Status'].map(color_map)
 
-    # Plotar polígonos (stands) no mapa
     #stands_sel.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=0.5)
 
-    # Plotar pontos com cores binárias para cobertura do dossel
     #ax.scatter(pred_attack_BQ_NEW['X'], pred_attack_BQ_NEW['Y'], 
     #        color=pred_attack_BQ_NEW['color'], s=1, alpha=1, marker='s', label='Cobertura do Dossel')
 
-    # Adicionar barra de escala e seta norte
     #ax.annotate('N', xy=(0.9, 0.1), xytext=(0.9, 0.2), 
     #            arrowprops=dict(facecolor='black', width=3, headwidth=10),
     #            ha='center', va='center', fontsize=3, color='black')
 
-    # Estilizar o gráfico e adicionar mapa de fundo
     #ctx.add_basemap(ax, crs=stands_sel.crs, source=ctx.providers.Esri.WorldImagery, attribution=False)
 
     #ax.axis('off')
 
-    # Adicionar uma legenda personalizada para os dois tipos de status
     #handles = [
     #    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='green', markersize=4, label='Saudável'),
     #    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='red', markersize=4, label='Desfolha')
     #]
     #ax.legend(handles=handles, fontsize=4, loc='lower left', title="Status", title_fontsize=6)
-
-    # Adicionar título ao gráfico
-    #ax.set_title("Status do Dossel", fontsize=5, pad=10)
 
 
     #GRÁFICO DE ROSCA ÁREA MONITORADA
@@ -198,15 +203,12 @@ if st.session_state.selectedvariable3:
 
     specific_area_df = total_area_df[total_area_df['FARM'] == selectedvariable1]
 
-    # Calcular a área total e a área específica
-    total_area_m2 = total_area_df['geometry'].to_crs("EPSG:32722").area.sum()  # Total em metros quadrados
-    specific_area = specific_area_df['geometry'].to_crs("EPSG:32722").area.sum()  # Área específica em metros quadrados
+    total_area_m2 = total_area_df['geometry'].to_crs("EPSG:32722").area.sum()  
+    specific_area = specific_area_df['geometry'].to_crs("EPSG:32722").area.sum()  
 
-    # Calcular a porcentagem da área específica em relação à área total
     specific_percentage = (specific_area / total_area_m2) * 100
     healthy_percentage = 100 - specific_percentage
 
-    # Convertendo a área total para hectares
     total_area_ha = total_area_m2 / 10000
     specific_area_ha = specific_area / 10000
     healthy_area_ha = total_area_ha - specific_area_ha
@@ -215,7 +217,6 @@ if st.session_state.selectedvariable3:
     colors = ['lightgray', 'darkgreen']
     labels = ['Demais fazendas', selectedvariable1]
 
-    # Criar o gráfico de rosca usando Plotly
     fig2 = go.Figure()
 
     fig2.add_trace(go.Pie(
@@ -232,7 +233,6 @@ if st.session_state.selectedvariable3:
         )
     ))
 
-    # Adicionar título e centralizar a área total no meio do gráfico
     fig2.update_layout(
         title={
             'text': f"Área Monitorada {selectedvariable4}",
@@ -263,24 +263,20 @@ if st.session_state.selectedvariable3:
     area_status['percentage'] = (area_status['area_status_ha'] / total_area_ha) * 100
     total_area_ha_2 = area_status['area_status_ha'].sum()
 
-    # Configurando as cores
     colors = {'Desfolha': 'red', 'Saudável': 'darkgreen'}
 
-    # Criando o gráfico de rosca com Plotly
     fig3 = go.Figure()
 
     fig3.add_trace(go.Pie(
         labels=area_status['Status'],
-        values=area_status['area_status_ha'],  # Usando a área proporcional calculada
-        hole=0.5,  # Para criar o efeito de rosca
+        values=area_status['area_status_ha'], 
+        hole=0.5, 
         marker=dict(colors=[colors[status] for status in area_status['Status']]),
         textinfo='label+percent',
         hoverinfo='label+value+percent',
         texttemplate='%{label}: %{value:.2f} ha<br>(%{percent:.2f}%)'
     ))
 
-
-    # Adicionando o texto central com a área total
     fig3.update_layout(
         annotations=[
             dict(
@@ -306,28 +302,20 @@ if st.session_state.selectedvariable3:
     # GRÁFICO FAZENDAS MAIS INFESTADAS
 
     stands_all = stands_all.to_crs("EPSG:32722")
-
-    # Filtrar as fazendas apenas da empresa especificada
     stands_all_filtered = stands_all[stands_all['COMPANY'] == selectedvariable4]
 
-    # Juntar a base pred_attack com stands_all filtrado para ter todas as informações em um só dataframe
     merged_df = pred_attack.merge(stands_all_filtered[['FARM', 'STAND', 'geometry']], on=['FARM', 'STAND'], how='left')
 
-    # Converter merged_df em um GeoDataFrame
     merged_df = gpd.GeoDataFrame(merged_df, geometry='geometry', crs="EPSG:32722")
 
-    # Criar a coluna 'Status' baseada nos critérios para definir 'Desfolha' e 'Saudável'
     merged_df['Status'] = ['Desfolha' if x < QT else 'Saudavel' for x in merged_df['canopycov']]
 
-    # Calcular a área de cada polígono em hectares
-    merged_df['area_ha'] = merged_df['geometry'].area / 10000  # Convertendo de m² para ha
+    merged_df['area_ha'] = merged_df['geometry'].area / 10000 
 
     unique_area_per_farm = merged_df[merged_df['Status'] == 'Desfolha'].drop_duplicates(subset=['FARM', 'STAND']).groupby('FARM', as_index=False)['area_ha'].sum()
 
-    # Renomeia a coluna para evitar confusão
     unique_area_per_farm.rename(columns={'area_ha': 'farm_desfolha_area_ha'}, inplace=True)
 
-    # Faz o agrupamento original e junta com a área total da fazenda
     grouped = (merged_df.dropna(subset=['Status'])
             .groupby(['DATE', 'Status', 'COMPANY', 'FARM'])
             .agg(count=('Status', 'size'))
@@ -348,22 +336,21 @@ if st.session_state.selectedvariable3:
         color_discrete_sequence=['darkgreen']
     )
 
-    # Personalizar o layout do gráfico
     fig4.update_layout(
         xaxis_title="Área de Desfolha (ha)",
         yaxis_title="Fazenda",
         title_font=dict(size=14, family='Arial', color='black'),
-        yaxis=dict(autorange='reversed')  # Inverter a ordem do eixo Y
+        yaxis=dict(autorange='reversed') 
     )
 
     # GRÁFICO TALHÕES MAIS INFESTADO POR FAZENDA
 
+    merged_df = merged_df[merged_df['FARM'] == selectedvariable1]
+
     unique_area_per_stand = merged_df[merged_df['Status'] == 'Desfolha'].drop_duplicates(subset=['FARM', 'STAND']).groupby('STAND', as_index=False)['area_ha'].sum()
 
-    # Renomeia a coluna para evitar confusão
     unique_area_per_stand.rename(columns={'area_ha': 'stand_desfolha_area_ha'}, inplace=True)
 
-    # Faz o agrupamento original e junta com a área total da fazenda
     grouped = (merged_df.dropna(subset=['Status'])
             .groupby(['DATE', 'Status', 'COMPANY', 'FARM', 'STAND'])
             .agg(count=('Status', 'size'))
@@ -372,10 +359,8 @@ if st.session_state.selectedvariable3:
 
     grouped = grouped[grouped['Status']=='Desfolha'].sort_values(by='stand_desfolha_area_ha', ascending=False)
 
-    # Obter apenas os 10 talhões com maior área de desfolha
     top_10_defoliation_stands = grouped.head(10)
 
-    # Criar o gráfico de barras horizontais usando Plotly
     fig5 = px.bar(
         top_10_defoliation_stands,
         x='stand_desfolha_area_ha',
@@ -386,18 +371,22 @@ if st.session_state.selectedvariable3:
         color_discrete_sequence=['darkgreen']
     )
 
-    # Personalizar o layout do gráfico
     fig5.update_layout(
         xaxis_title="Área de Desfolha (ha)",
         yaxis_title="Talhão",
         title_font=dict(size=14, family='Arial', color='black'),
-        yaxis=dict(autorange='reversed')  # Inverter a ordem do eixo Y
+        yaxis=dict(autorange='reversed') 
     )
 
 
-    col_, col4, col_  = st.columns([5, 6, 5])
+    col3, col4, col5  = st.columns([5, 6, 5])
+    with col3: 
+        st.markdown(create_card('Número de fazendas', num_unique_farms), unsafe_allow_html=True)
     with col4:
         st.pyplot(fig1)
+    with col5:
+        st.markdown(create_card('Número de talhões na fazenda', num_unique_stands), unsafe_allow_html=True)
+
 
     col6, col7 = st.columns([1,1])
     with col6:

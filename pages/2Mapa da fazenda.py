@@ -17,19 +17,20 @@ from io import BytesIO
 st.set_page_config(page_title="Mapa da fazenda", layout="wide")
 
 
-#Barra superior com logos
 col1, col2, col3, col4 = st.columns([3, 2, 1, 3])
 with col2:
-    st.image("logos/logotipo_combate.png")
+    st.image("logos\logotipo_combate.png")
 with col3:
-    st.image("logos/logotipo_Maxsatt.png")
+    st.image("logos\logotipo_Maxsatt.png")
 
 
 st.title("Mapa da fazenda")
 
-# Query para carregar os dados de forma mais rápida
-conn = duckdb.connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction/pred_attack_2024.parquet'")
+@st.cache_resource 
+def connect(file):
+    return duckdb.connect(file)
+conn = connect('my_database.db')
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
 query = """
 SELECT * FROM pred_attack
 WHERE UPPER(FARM) = ?
@@ -47,10 +48,8 @@ SELECT MAX(DATE) AS most_recent_date
 FROM pred_attack
 """
 
-# Executar a query e retornar a data mais recente
 most_recent_date_df = conn.execute(query_recent).fetchdf()
 
-# Obter a data como um valor individual
 most_recent_date = most_recent_date_df['most_recent_date'][0]
 
 if 'selectedvariable1' not in st.session_state:
@@ -81,7 +80,6 @@ if st.session_state.selectedvariable1:
         stands_all['STAND'] = stands_all.apply(lambda row: f"{row['Fazenda']}_{row['CD_TALHAO']}", axis=1)
         return stands_all
 
-    # Carregando dados do shapefile
     stands_all = load_stands_data("prediction/Talhoes_Manulife_2.shp")
 
     if 'selectedvariable2' not in st.session_state:
@@ -102,11 +100,9 @@ if st.session_state.selectedvariable1:
         'Selecione a Data:',
         min_value=pd.to_datetime('2018-01-01'),
         max_value=pd.to_datetime('2024-12-31'),
-        value=pd.to_datetime(most_recent_date)  # Defina uma data padrão, se necessário
+        value=pd.to_datetime(most_recent_date)
     )
 
-    # Definir variáveis e tabelas que serão usadas pelos gráficos
-    # Definir QT usando query para não sobrecarregar a memória
     quantile_query = """
     SELECT QUANTILE(canopycov, 0.10) AS QT
     FROM pred_attack
@@ -114,9 +110,6 @@ if st.session_state.selectedvariable1:
 
     QT = conn.execute(quantile_query).fetchdf().iloc[0]['QT']
 
-    # Mapa da fazenda
-
-    # 2. Filtragem de dados
     pred_attack_BQ = pred_attack[pred_attack['FARM'] == selectedvariable1]
     pred_attack_BQ_FARM = pred_attack_BQ.groupby(['FARM', 'STAND', 'DATE']).agg(
         {'X': 'mean', 'Y': 'mean', 'canopycov': 'mean', 'cover_min': 'mean'}
@@ -124,7 +117,6 @@ if st.session_state.selectedvariable1:
 
     stands_sel_farm = stands_all[stands_all['FARM'] == selectedvariable1]
 
-    # 3. Filtrando por cobertura do dossel
     list_stands_healthy = pred_attack_BQ_FARM[pred_attack_BQ_FARM['canopycov'] > QT]
     list_stands_attack = pred_attack_BQ_FARM[pred_attack_BQ_FARM['canopycov'] < QT]
 
@@ -134,7 +126,6 @@ if st.session_state.selectedvariable1:
     mean_lat = pred_attack_BQ['Y'].mean()
     mean_lon = pred_attack_BQ['X'].mean()
 
-    # Funções para definir o estilo dos polígonos
     def style_healthy(feature):
         return {'color': 'yellow', 'fillOpacity': 0}
 
@@ -142,24 +133,18 @@ if st.session_state.selectedvariable1:
         return {'color': 'red', 'fillOpacity': 0}
 
 
-    # Função para criar o mapa, agora com funções regulares
     @st.cache_data
     def create_map(mean_lat, mean_lon, _stands_sel_farm_health, _stands_sel_farm_attack):
         if np.isnan(mean_lat) or np.isnan(mean_lon):
-            # Caso contenham NaNs, cria um mapa genérico
             m = folium.Map(location=[0, 0], zoom_start=10)
             folium.Marker(
                 location=[0, 0],
                 popup="Nenhum dado válido para exibir.",
             ).add_to(m)
         else:
-            # Caso válido, cria o mapa normalmente
             m = folium.Map(location=[mean_lat, mean_lon], zoom_start=12)
-
-            # Adicionando camada de satélite
             folium.TileLayer('Esri.WorldImagery').add_to(m)
 
-            # Adicionando polígonos com contornos
             for _, row in _stands_sel_farm_health.iterrows():
                 folium.GeoJson(
                     row['geometry'], 
@@ -173,15 +158,12 @@ if st.session_state.selectedvariable1:
                 ).add_to(m)
         return m
 
-    # Função para gerar o GeoPDF
     def create_geopdf(_stands_sel_farm_health, _stands_sel_farm_attack, file_path="map.pdf"):
-        # Reprojetar os dados para EPSG:3857
         _stands_sel_farm_health = _stands_sel_farm_health.to_crs(epsg=3857)
         _stands_sel_farm_attack = _stands_sel_farm_attack.to_crs(epsg=3857)
         
         fig, ax = plt.subplots(figsize=(10, 10))
         
-        # Plotar os polígonos saudáveis e atacados
         if not _stands_sel_farm_health.empty:
             _stands_sel_farm_health.plot(
                 ax=ax, edgecolor='yellow', linewidth=1.5, facecolor='none', label='Saudável'
@@ -191,29 +173,23 @@ if st.session_state.selectedvariable1:
                 ax=ax, edgecolor='red', linewidth=1.5, facecolor='none', label='Atacado'
             )
         
-        # Adicionar contexto de mapa base
         ctx.add_basemap(ax, source=ctx.providers.Esri.WorldImagery, crs="EPSG:3857")
 
-        # Adicionar escala e legenda
         scalebar = ScaleBar(1, location='lower right')
         ax.add_artist(scalebar)
         ax.legend(loc='upper left')
 
-        # Ajustar visualização
         ax.set_axis_off()
         plt.tight_layout()
 
-        # Salvar o mapa como PDF
         fig.savefig(file_path, format='pdf')
         plt.close(fig)
 
 
-    # Gerar o GeoPDF e disponibilizar para download
     buffer = BytesIO()
     create_geopdf(stands_sel_farm_health, stands_sel_farm_attack, file_path=buffer)
     buffer.seek(0)
 
-    # Adicionar botão de download ao Streamlit
     st.sidebar.download_button(
         label="Download do Mapa em GeoPDF",
         data=buffer,
@@ -221,10 +197,7 @@ if st.session_state.selectedvariable1:
         mime="application/pdf"
     )
 
-    # Criar o mapa apenas uma vez
     m = create_map(mean_lat, mean_lon, stands_sel_farm_health, stands_sel_farm_attack)
 
-    # Exibir o mapa no Streamlit com tamanho ajustado
-    st_folium(m, width=1000, height=600)  # Ajuste o tamanho conforme necessário
 
-    
+    st_folium(m, width=1000, height=600)

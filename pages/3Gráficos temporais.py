@@ -16,19 +16,20 @@ import duckdb
 st.set_page_config(page_title="Mapa da fazenda", layout="wide")
 
 
-#Barra superior com logos
 col1, col2, col3, col4 = st.columns([3, 2, 1, 3])
 with col2:
-    st.image("logos/logotipo_combate.png")
+    st.image("logos\logotipo_combate.png")
 with col3:
-    st.image("logos/logotipo_Maxsatt.png")
+    st.image("logos\logotipo_Maxsatt.png")
 
 
 st.title("Gráficos temporais")
 
-# Query para carregar os dados de forma mais rápida
-conn = duckdb.connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction/pred_attack_2024.parquet'")
+@st.cache_resource 
+def connect(file):
+    return duckdb.connect(file)
+conn = connect('my_database.db')
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
 query = """
 SELECT STAND, FARM, DATE, canopycov, COMPANY, canopycovfit, cover_min, cover_max FROM pred_attack
 WHERE UPPER(FARM) = ?
@@ -61,7 +62,7 @@ if st.session_state.selectedvariable1:
     pred_attack['FARM'] = pred_attack['FARM'].str.upper()
     pred_attack['STAND'] = pred_attack['STAND'].str.upper()
 
-    stands_all = gpd.read_file("prediction/Talhoes_Manulife_2.shp")
+    stands_all = gpd.read_file("prediction\Talhoes_Manulife_2.shp")
     stands_all = stands_all.to_crs(epsg=4326)
     stands_all['COMPANY'] = stands_all['Companhia'].str.upper()
     stands_all['FARM'] = stands_all['Fazenda'].str.replace(" ", "_")
@@ -83,8 +84,6 @@ if st.session_state.selectedvariable1:
         for farm in unique_farms
     }
 
-    # Definir variáveis e tabelas que serão usadas pelos gráficos
-    # Definir QT usando query para não sobrecarregar a memória
     quantile_query = """
     SELECT QUANTILE(canopycov, 0.10) AS QT
     FROM pred_attack
@@ -106,47 +105,37 @@ if st.session_state.selectedvariable1:
              .size()
              .reset_index(name='count'))
 
-    # Calcular a porcentagem de "Desfolha" por data
     total_counts = rdown_os.groupby('DATE')['count'].sum().reset_index(name='total')
     rdown_os = rdown_os.merge(total_counts, on='DATE')
     rdown_os['percentage'] = (rdown_os['count'] / rdown_os['total']) * 100
 
-    # Filtrar apenas os dados de "Desfolha" e ordenar por data
     rdown_os_desfolha = rdown_os[rdown_os['Status'] == 'Desfolha'].sort_values(by='DATE')
 
-    # Calculando médias e desvios padrão
     pred_avg_agg = (pred_stand.groupby('DATE').agg(
         canopycover=('canopycovfit', 'mean'),
         cover_min=('cover_min', 'mean'),
         canopycovSD=('canopycov', 'std')
     ).reset_index())
 
-    # Calculando a raiz quadrada da cobertura do dossel
     pred_avg_agg['canopycovSqrt'] = np.sqrt(pred_avg_agg['canopycover'])
 
-    # Calculando limites de confiança
     pred_avg_agg['canopycoverSDmax'] = pred_avg_agg['canopycover'] + (1.96 * pred_avg_agg['canopycovSD'] / pred_avg_agg['canopycovSqrt'])
     pred_avg_agg['canopycoverSDmin'] = pred_avg_agg['canopycover'] - (1.96 * pred_avg_agg['canopycovSD'] / pred_avg_agg['canopycovSqrt'])
 
-    # Grupo de decisão
     pred_avg_agg['groups'] = np.where(pred_avg_agg['canopycover'] > QT, 'D', 'S')
 
-    # Decisões
     pred_avg_agg['decision'] = np.where(pred_avg_agg['groups'] == 'D', 
                                         np.where(pred_avg_agg['canopycover'].rolling(2).count() >= 2, 'Tomada de decisão', 'Não combate'), 
                                         '')
 
-    # Convertendo a coluna DATE para datetime
     pred_avg_agg['DATE'] = pd.to_datetime(pred_avg_agg['DATE'])
 
 
 
     # GRÁFICO TEMPORAL
 
-    # Criando o gráfico com Plotly
     fig4 = go.Figure()
 
-    # Linha principal de cobertura do dossel
     fig4.add_trace(go.Scatter(
         x=pred_avg_agg['DATE'],
         y=pred_avg_agg['canopycover'],
@@ -156,18 +145,16 @@ if st.session_state.selectedvariable1:
         marker=dict(size=6)
     ))
 
-    # Intervalo de confiança
     fig4.add_trace(go.Scatter(
         x=pd.concat([pred_avg_agg['DATE'], pred_avg_agg['DATE'][::-1]]),
         y=pd.concat([pred_avg_agg['canopycoverSDmax'], pred_avg_agg['canopycoverSDmin'][::-1]]),
         fill='toself',
-        fillcolor='rgba(173, 216, 230, 0.4)',  # Azul claro com transparência
+        fillcolor='rgba(173, 216, 230, 0.4)', 
         line=dict(color='rgba(255,255,255,0)'),
         name='Intervalo de Confiança (95%)',
         hoverinfo='skip'
     ))
 
-    # Personalização do layout
     fig4.update_layout(
         title=f"Talhão {selectedvariable2}, Reflectância no tempo",
         xaxis_title="Data",
@@ -183,7 +170,6 @@ if st.session_state.selectedvariable1:
 
     fig5 = go.Figure()
 
-    # Adicionar a linha de desfolha
     fig5.add_trace(go.Scatter(
         x=rdown_os_desfolha['DATE'],
         y=rdown_os_desfolha['percentage'],
@@ -193,7 +179,6 @@ if st.session_state.selectedvariable1:
         marker=dict(size=8)
     ))
 
-    # Configuração do layout
     fig5.update_layout(
         title="Desfolha (%) no Tempo",
         xaxis_title="Data",

@@ -64,13 +64,13 @@ Este vídeo no YouTube serve como tutorial para a obtenção do token: https://w
 
 Nas proximas vezes que for seguido o procedimento, devemos acessar o diretório criado anteriormente e executar o comando a seguir:
 ```
-	git pull https://github.com/CombateSF-App/combatesf-streamlit-app
+    git pull https://github.com/CombateSF-App/combatesf-streamlit-app
 ```
 
 Por fim, após a alteração da base de dados, o procedimento consiste em repetir os passos 3), 4) e 5) mencionados acima.
 
 
-Resumidamente:
+### Resumidamente:
 ---------------------
 	- Primeira vez:
 		git clone https://github.com/CombateSF-App/combatesf-streamlit-app
@@ -111,7 +111,7 @@ instala as dependências necessárias na máquina onde se deseja efetuar o teste
 
 Para efetuar um teste local do app, devemos seguir os passos 1) e 2) e executar o comando
 ```
-	streamlit run .\Home.py
+    streamlit run .\Home.py
 ```
 Este comando abre uma guia em um browser por meio da qual é possível interagir com o app.
 

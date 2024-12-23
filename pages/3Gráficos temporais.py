@@ -18,9 +18,9 @@ st.set_page_config(page_title="Mapa da fazenda", layout="wide")
 
 col1, col2, col3, col4 = st.columns([3, 2, 1, 3])
 with col2:
-    st.image("logos\logotipo_combate.png")
+    st.image("logos\\logotipo_combate.png")
 with col3:
-    st.image("logos\logotipo_Maxsatt.png")
+    st.image("logos\\logotipo_Maxsatt.png")
 
 
 st.title("Gráficos temporais")
@@ -29,7 +29,7 @@ st.title("Gráficos temporais")
 def connect(file):
     return duckdb.connect(file)
 conn = connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\\pred_attack_2024.parquet'")
 query = """
 SELECT STAND, FARM, DATE, canopycov, COMPANY, canopycovfit, cover_min, cover_max FROM pred_attack
 WHERE UPPER(FARM) = ?
@@ -62,7 +62,7 @@ if st.session_state.selectedvariable1:
     pred_attack['FARM'] = pred_attack['FARM'].str.upper()
     pred_attack['STAND'] = pred_attack['STAND'].str.upper()
 
-    stands_all = gpd.read_file("prediction\Talhoes_Manulife_2.shp")
+    stands_all = gpd.read_file("prediction\\Talhoes_Manulife_2.shp")
     stands_all = stands_all.to_crs(epsg=4326)
     stands_all['COMPANY'] = stands_all['Companhia'].str.upper()
     stands_all['FARM'] = stands_all['Fazenda'].str.replace(" ", "_")

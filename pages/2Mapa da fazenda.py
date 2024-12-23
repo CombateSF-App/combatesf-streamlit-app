@@ -19,9 +19,9 @@ st.set_page_config(page_title="Mapa da fazenda", layout="wide")
 
 col1, col2, col3, col4 = st.columns([3, 2, 1, 3])
 with col2:
-    st.image("logos\logotipo_combate.png")
+    st.image("logos\\logotipo_combate.png")
 with col3:
-    st.image("logos\logotipo_Maxsatt.png")
+    st.image("logos\\logotipo_Maxsatt.png")
 
 
 st.title("Mapa da fazenda")
@@ -30,7 +30,7 @@ st.title("Mapa da fazenda")
 def connect(file):
     return duckdb.connect(file)
 conn = connect('my_database.db')
-conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\pred_attack_2024.parquet'")
+conn.execute("CREATE TABLE IF NOT EXISTS pred_attack AS SELECT * FROM 'prediction\\pred_attack_2024.parquet'")
 query = """
 SELECT * FROM pred_attack
 WHERE UPPER(FARM) = ?
@@ -80,7 +80,7 @@ if st.session_state.selectedvariable1:
         stands_all['STAND'] = stands_all.apply(lambda row: f"{row['Fazenda']}_{row['CD_TALHAO']}", axis=1)
         return stands_all
 
-    stands_all = load_stands_data("prediction/Talhoes_Manulife_2.shp")
+    stands_all = load_stands_data("prediction\\Talhoes_Manulife_2.shp")
 
     if 'selectedvariable2' not in st.session_state:
         st.session_state.selectedvariable2 = 'EMBAY_001'

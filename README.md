@@ -25,8 +25,9 @@ O repositório no GitHub contém todos os arquivos referentes ao projeto. Entret
 O repositório deve ser alterado sempre que for desejada qualquer alteração na base de dados "my_database.db". Sendo assim, há uma sequência de passos a serem seguidos sempre que uma alteração for efetuada:
 
 1) Na primeira vez que for seguido o procedimento, é preciso criar um diretório local através do qual serão feitas as alterações por meio do comando
-
+```
     git clone https://github.com/CombateSF-App/combatesf-streamlit-app
+```
 
 2) Em seguida, devemos acessar o novo diretório, por meio do comando (no Sistema Operacional Windows)
 ```
@@ -36,23 +37,23 @@ O repositório deve ser alterado sempre que for desejada qualquer alteração na
 3) Por fim, após a alteração da base de dados, a sequência de comandos a seguir determina o uso do Git LFS e atualiza o repositório no GitHub
 ```
     git lfs install
-	git lfs track .\my_database.db
-	git add .\.gitattributes
-	git add .\my_database.db
-	git commit -m "[Mensagem de Commit]"
-	git push
+    git lfs track .\my_database.db
+    git add .\.gitattributes
+    git add .\my_database.db
+    git commit -m "[Mensagem de Commit]"
+    git push
 ```
 
 Após este último comando, pode surgir na tela algumas opções de login com o GitHub. Neste passo a passo, elas não são utilizadas, então a janela que as apresenta pode ser fechada.
 
 4) A seguir, devemos digitar “CombateSF-App” ao lado de
 ```
-	Username for 'https://github.com':
+    Username for 'https://github.com':
 ```
 
 5) No campo seguinte,
 ```
-	Password for 'https://CombateSF-App@github.com':
+    Password for 'https://CombateSF-App@github.com':
 ```
 
 devemos digitar o GitHub Personal access token ao invés da senha da conta.

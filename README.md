@@ -25,6 +25,7 @@ O repositório no GitHub contém todos os arquivos referentes ao projeto. Entret
 O repositório deve ser alterado sempre que for desejada qualquer alteração na base de dados "my_database.db". Sendo assim, há uma sequência de passos a serem seguidos sempre que uma alteração for efetuada:
 
 1) Na primeira vez que for seguido o procedimento, é preciso criar um diretório local através do qual serão feitas as alterações por meio do comando
+
     git clone https://github.com/CombateSF-App/combatesf-streamlit-app
 
 2) Em seguida, devemos acessar o novo diretório, por meio do comando (no Sistema Operacional Windows)
@@ -102,11 +103,15 @@ O deploy do app é feito pelo Streamlit Community Cloud. Para acessar o app como
 Recomenda-se efetuar o login no Streamlit Community Cloud através do GitHub.
 
 O arquivo "requirements.txt" contém todas as dependências do app para que ele possa ser executado. A plataforma do Streamlit faz as instalações necessárias por conta própria através do arquivo. Entretanto, caso seja desejado efetuar um teste local do app, o comando
-	pip install -r requirements.txt
+```
+    pip install -r requirements.txt
+```
 instala as dependências necessárias na máquina onde se deseja efetuar o teste.
 
 Para efetuar um teste local do app, devemos seguir os passos 1) e 2) e executar o comando
+```
 	streamlit run .\Home.py
+```
 Este comando abre uma guia em um browser por meio da qual é possível interagir com o app.
 
 
